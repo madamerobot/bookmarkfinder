@@ -44,9 +44,8 @@ html(lang='en')
           .col-sm-6
             #output.area
               h2.mbot25 Output
-                h4 All Bookmarks:
-                each hit in olddatabase
-                  h3=hit.inputname
-                  h4=hit.inputurl
-                  h4=hit.multipletags
+                h4 Seach Results:
+                each hit in results
+                  h4=hit.inputname  
+                  h4=hit.inputurl  
     script(src='main.js')

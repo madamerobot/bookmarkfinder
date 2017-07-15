@@ -23,37 +23,26 @@ app.use(express.static('public'));
 //Requiring file system library
 var fs = require('fs');
 
-/*--HELPER FUNCTION--*/
+/*------ROUTES-------*/
 
-var readFile = function(){
+/*---HELPER FUNCTIONS---*/
 
-	fs.readFile('bookmarks.json', 'utf-8', function(err, data){
-			if (err){
-				console.log(err);
-			} else {
-				console.log('Read file successfully.');
-			}
+fs.readFilePromise = function(path){
+//return a new promise
+	return new Promise (function(resolve, reject){
+		fs.readFile(path, 'utf-8', function(err, contents){
+		if(err){
+		return reject(err);
+		}
+	 	//otherwise, resolve the promise with the file contents
+		resolve(contents);
+		});
 	});
 }
-
-/*------ROUTES-------*/
 
 /*---LANDING PAGE TO SEE FORM -->*/
 
 app.get('/', function(req,res){
-
-	fs.readFilePromise = function(path){
-	//return a new promise
-		return new Promise (function(resolve, reject){
-			fs.readFile(path, 'utf-8', function(err, contents){
-			if(err){
-			return reject(err);
-			}
-		 	//otherwise, resolve the promise with the file contents
-			resolve(contents);
-			});
-		});
-	}
 	
 	fs.readFilePromise('bookmarks.json')
 		.then(function(fileContents){
@@ -73,6 +62,8 @@ app.post('/',function(req,res){
 	var inputtag = req.body.tags;
 
 	var multipletags = inputtag.split(",");
+	// var test = JSON.parse(multipletags);
+	// console.log('--->TEST: '+test);
 
 	newdatabaseinput.push({
 		inputname,
@@ -82,28 +73,50 @@ app.post('/',function(req,res){
 
 	console.log('New database input: '+JSON.stringify(newdatabaseinput));
 
-	//Reading JSON file content
-	var olddatabase = [];
-	var updatedDatabase = [];
-	var updatedDBString = [];
+	//Reading existing JSON file and merging with new input data
+	fs.readFilePromise('bookmarks.json')		
+		.then(function(fileContents){
 
-	fs.readFile('bookmarks.json', 'utf-8', function(err, data){
-		if (err){
-			throw err;
-		} else {
-			olddatabase = JSON.parse(data);
-			console.log('Old database: '+JSON.stringify(olddatabase));
-			updatedDatabase = olddatabase.concat(newdatabaseinput);
-
-			updatedDBString = JSON.stringify(updatedDatabase);
-			console.log('Updated Database: '+updatedDBString);
+			var olddatabase = JSON.parse(fileContents);
+			var updatedDatabase = newdatabaseinput.concat(olddatabase);
+			var updatedDBString = JSON.stringify(updatedDatabase);
 
 			fs.writeFile('bookmarks.json', updatedDBString, (err) => {
 				if (err) throw err;
-				console.log('Bookmaks have been saved!');
+					console.log('Bookmaks have been saved!');
 			});
-		}
-	}); //End of fs.readFile
+		});
+})
+
+app.post('/search',function(req,res){
+	
+	var searchquery = req.body.searchquery;
+	console.log("I see this searchquery: "+searchquery);
+
+	fs.readFilePromise('bookmarks.json')
+		.then(function(fileContents){
+			
+		var olddatabase = JSON.parse(fileContents);
+		var results = [];
+
+			for(var i=0; i<olddatabase.length; i++){
+				
+				var tags = JSON.stringify(olddatabase[i].multipletags);
+				console.log('Loop sees this: '+tags);
+
+				var pos = tags.indexOf(searchquery);
+				if(pos>0){
+					console.log('Position: '+pos);
+					results.push(olddatabase[i]);
+				} else {
+					console.log('Keyword not found.');
+				}		
+			}
+		var resultstring = 	JSON.stringify(results);
+		console.log('Results: '+JSON.stringify(resultstring));
+
+		res.render("results", {results: results});	
+		})
 })
 
 
