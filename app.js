@@ -20,51 +20,92 @@ app.set('view engine', 'pug');
 
 app.use(express.static('public'));
 
-//Requiring postgres library
-const pg = require('pg')
+//Requiring file system library
+var fs = require('fs');
 
-//---POSTGRES CONNECTION------
+/*--HELPER FUNCTION--*/
 
-// var connectionString = 'postgres://' + process.env.POSTGRES_USER + ':' + process.env.POSTGRES_PASSWORD + '@localhost/bookmarkfinder';
-var connectionString = 'postgres://schmetterling:schmetterling@localhost/bookmarkfinder';
+var readFile = function(){
+
+	fs.readFile('bookmarks.json', 'utf-8', function(err, data){
+			if (err){
+				console.log(err);
+			} else {
+				console.log('Read file successfully.');
+			}
+	});
+}
 
 /*------ROUTES-------*/
 
 /*---LANDING PAGE TO SEE FORM -->*/
 
 app.get('/', function(req,res){
-	res.render("index");
-})
+
+	fs.readFilePromise = function(path){
+	//return a new promise
+		return new Promise (function(resolve, reject){
+			fs.readFile(path, 'utf-8', function(err, contents){
+			if(err){
+			return reject(err);
+			}
+		 	//otherwise, resolve the promise with the file contents
+			resolve(contents);
+			});
+		});
+	}
+	
+	fs.readFilePromise('bookmarks.json')
+		.then(function(fileContents){
+		var olddatabase = JSON.parse(fileContents);
+		console.log(olddatabase);
+		res.render("index", {olddatabase: olddatabase});
+		});	
+});
 
 app.post('/',function(req,res){
+
+	//Receving new input
+	var newdatabaseinput= [];
 
 	var inputname = req.body.name;
 	var inputurl = req.body.url;
 	var inputtag = req.body.tags;
 
-	console.log('I see this: '+inputname+' '+inputurl+' '+inputtag);
+	var multipletags = inputtag.split(",");
 
-	pg.connect(connectionString, function (err, client, done){
-		
-		if(err){
-			console.log(err);
+	newdatabaseinput.push({
+		inputname,
+		inputurl,
+		multipletags
+	})
+
+	console.log('New database input: '+JSON.stringify(newdatabaseinput));
+
+	//Reading JSON file content
+	var olddatabase = [];
+	var updatedDatabase = [];
+	var updatedDBString = [];
+
+	fs.readFile('bookmarks.json', 'utf-8', function(err, data){
+		if (err){
+			throw err;
+		} else {
+			olddatabase = JSON.parse(data);
+			console.log('Old database: '+JSON.stringify(olddatabase));
+			updatedDatabase = olddatabase.concat(newdatabaseinput);
+
+			updatedDBString = JSON.stringify(updatedDatabase);
+			console.log('Updated Database: '+updatedDBString);
+
+			fs.writeFile('bookmarks.json', updatedDBString, (err) => {
+				if (err) throw err;
+				console.log('Bookmaks have been saved!');
+			});
 		}
-		
-		//INSERT USER INFO
-		client.query(`INSERT INTO bookmarkfinder
-					(name, url, tags) 
-					VALUES ($1, $2, $3)`, 
-					[inputname, inputurl, inputtag], function(err, users){
-					if(err){
-						console.log(err);
-					}
-			console.log("URL info got inserted");
-			done();
-			pg.end();
-		});
-	});
-
+	}); //End of fs.readFile
 })
+
 
 //------------DEFINING PORT 8080 FOR SERVER----------------------
 var server = app.listen(8080, () => {
