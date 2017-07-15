@@ -1,0 +1,36 @@
+body {
+    background: #f1f1f1;
+    color: #222222;
+    font-family: montserrat, arial, sans-serif;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+a, a:hover {
+    text-decoration: none;
+}
+
+a {
+    color: red;
+}
+
+.area {
+    border: 3px solid #222222;
+    background: #f1f1f1;
+    padding: 15px;
+    margin-bottom: 25px;
+}
+
+h2 {
+    margin: 0;
+}
+
+.form-control, button {
+    border: 3px solid #222222;
+    background: #f1f1f1;
+    font-weight: bold;
+}
+
+#output a {
+    font-size: 22px;
+}
